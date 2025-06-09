@@ -16,7 +16,8 @@ type MCPServer struct {
 	server *server.MCPServer
 }
 
-func NewMCPServer(provider *provider.ApiProvider) *MCPServer {
+// Changed provider parameter to be the interface type directly
+func NewMCPServer(provider provider.ApiProvider) *MCPServer {
 	s := server.NewMCPServer(
 		"Slack MCP Server",
 		"1.0.0",
