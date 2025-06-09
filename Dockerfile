@@ -31,11 +31,23 @@ CMD ["mcp-server", "--transport", "sse"]
 
 FROM alpine:3.18 AS production
 
-RUN apk add --no-cache ca-certificates net-tools curl
+RUN apk add --no-cache ca-certificates
+
+# Create a new group and user
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
 
 COPY --from=build /go/bin/mcp-server /usr/local/bin/mcp-server
 
+# Ensure the binary is executable by the nonroot user
+RUN chmod +x /usr/local/bin/mcp-server
+
 WORKDIR /app
+
+# Change ownership of the /app directory
+RUN chown -R nonroot:nonroot /app
+
+# Switch to the nonroot user
+USER nonroot
 
 EXPOSE 3001
 
