@@ -1,12 +1,14 @@
 package text
 
 import (
+	"strings"
+
 	"github.com/bbalet/stopwords"
 )
 
 func ProcessText(s string) string {
 	s = stopwordsFilter(s)
-
+	s = strings.TrimSpace(s)
 	return s
 }
 
