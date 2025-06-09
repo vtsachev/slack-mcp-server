@@ -6,13 +6,15 @@ type UserAgentTransport struct {
 	roundTripper http.RoundTripper
 	userAgent    string
 	cookie       string
+	dsCookie     string
 }
 
-func New(roundTripper http.RoundTripper, userAgent string, cookie string) *UserAgentTransport {
+func New(roundTripper http.RoundTripper, userAgent string, cookie string, dsCookie string) *UserAgentTransport {
 	return &UserAgentTransport{
 		roundTripper: roundTripper,
 		userAgent:    userAgent,
 		cookie:       cookie,
+		dsCookie:     dsCookie,
 	}
 }
 
@@ -20,7 +22,7 @@ func New(roundTripper http.RoundTripper, userAgent string, cookie string) *UserA
 func (t *UserAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	clonedReq := req.Clone(req.Context())
 	clonedReq.Header.Set("User-Agent", t.userAgent)
-	clonedReq.Header.Set("Cookie", "d="+t.cookie+";d-s=1744415074")
+	clonedReq.Header.Set("Cookie", "d="+t.cookie+";d-s="+t.dsCookie)
 
 	return t.roundTripper.RoundTrip(clonedReq)
 }
