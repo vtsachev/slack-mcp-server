@@ -15,15 +15,31 @@ import (
 	"github.com/slack-go/slack"
 )
 
-type ApiProvider struct {
+// SlackClientInterface defines the subset of slack.Client methods used by handlers.
+type SlackClientInterface interface {
+	GetConversationsContext(ctx context.Context, params *slack.GetConversationsParameters) ([]slack.Channel, string, error)
+	GetConversationHistoryContext(ctx context.Context, params *slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error)
+	// Add other methods like GetUsersInfoContext if they are confirmed to be used by other handlers
+}
+
+// ApiProvider defines the interface for providing a Slack API client
+// and other necessary dependencies for handlers.
+type ApiProvider interface {
+	Provide() (SlackClientInterface, error) // Changed return type
+	ProvideUsersMap() map[string]slack.User
+}
+
+// apiProviderImpl is the concrete implementation of the ApiProvider interface.
+type apiProviderImpl struct {
 	boot   func() *slack.Client
-	client *slack.Client
+	client *slack.Client // This will likely change to SlackClientInterface
 
 	users      map[string]slack.User
 	usersCache string
 }
 
-func New() *ApiProvider {
+// New creates a new ApiProvider instance.
+func New() ApiProvider {
 	token := os.Getenv("SLACK_MCP_XOXC_TOKEN")
 	if token == "" {
 		panic("SLACK_MCP_XOXC_TOKEN environment variable is required")
@@ -46,8 +62,8 @@ func New() *ApiProvider {
 		log.Printf("User caching to disk is DISABLED.")
 	}
 
-	return &ApiProvider{
-		boot: func() *slack.Client {
+	return &apiProviderImpl{
+		boot: func() *slack.Client { // This function's return might need to fit SlackClientInterface
 			api := slack.New(token,
 				withHTTPClientOption(cookie),
 			)
@@ -63,16 +79,17 @@ func New() *ApiProvider {
 				withTeamEndpointOption(res.URL),
 			)
 
-			return api
+			return api // This *slack.Client will implicitly satisfy SlackClientInterface if its methods are a subset
 		},
 		users:      make(map[string]slack.User),
 		usersCache: userCachePath, // This will be empty if caching is disabled
 	}
 }
 
-func (ap *ApiProvider) Provide() (*slack.Client, error) {
+// Provide returns a configured Slack client.
+func (ap *apiProviderImpl) Provide() (*slack.Client, error) { // This will likely change to return SlackClientInterface
 	if ap.client == nil {
-		ap.client = ap.boot()
+		ap.client = ap.boot() // ap.client will be *slack.Client which satisfies SlackClientInterface
 
 		err := ap.bootstrapDependencies(context.Background())
 		if err != nil {
@@ -83,7 +100,8 @@ func (ap *ApiProvider) Provide() (*slack.Client, error) {
 	return ap.client, nil
 }
 
-func (ap *ApiProvider) bootstrapDependencies(ctx context.Context) error {
+// bootstrapDependencies loads necessary data like user lists.
+func (ap *apiProviderImpl) bootstrapDependencies(ctx context.Context) error {
 	// Attempt to load from cache only if caching is enabled (usersCache is not empty)
 	if ap.usersCache != "" {
 		if data, err := ioutil.ReadFile(ap.usersCache); err == nil {
@@ -108,7 +126,8 @@ func (ap *ApiProvider) bootstrapDependencies(ctx context.Context) error {
 	log.Printf("Fetching users from API...")
 	optionLimit := slack.GetUsersOptionLimit(1000)
 
-	users, err := ap.client.GetUsersContext(ctx,
+	// ap.client here is *slack.Client, which implements SlackClientInterface
+	users, err := ap.client.GetUsersContext(ctx, // This method is not on the new interface yet
 		optionLimit,
 	)
 	if err != nil {
@@ -136,7 +155,8 @@ func (ap *ApiProvider) bootstrapDependencies(ctx context.Context) error {
 	return nil
 }
 
-func (ap *ApiProvider) ProvideUsersMap() map[string]slack.User {
+// ProvideUsersMap returns the map of cached users.
+func (ap *apiProviderImpl) ProvideUsersMap() map[string]slack.User {
 	return ap.users
 }
 

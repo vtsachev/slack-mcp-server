@@ -26,11 +26,11 @@ type Channel struct {
 }
 
 type ChannelsHandler struct {
-	apiProvider *provider.ApiProvider
+	apiProvider provider.ApiProvider // Changed to interface type
 	validTypes  map[string]bool
 }
 
-func NewChannelsHandler(apiProvider *provider.ApiProvider) *ChannelsHandler {
+func NewChannelsHandler(apiProvider provider.ApiProvider) *ChannelsHandler { // Changed parameter to interface type
 	validTypes := make(map[string]bool, len(AllChanTypes))
 	for _, v := range AllChanTypes {
 		validTypes[v] = true
@@ -65,7 +65,7 @@ func (ch *ChannelsHandler) ChannelsHandler(ctx context.Context, request mcp.Call
 		limit = 100
 	}
 
-	api, err := ch.apiProvider.Provide()
+	api, err := ch.apiProvider.Provide() // This will now call the interface method
 	if err != nil {
 		return nil, err
 	}

@@ -26,10 +26,10 @@ type Message struct {
 }
 
 type ConversationsHandler struct {
-	apiProvider *provider.ApiProvider
+	apiProvider provider.ApiProvider // Changed to interface type
 }
 
-func NewConversationsHandler(apiProvider *provider.ApiProvider) *ConversationsHandler {
+func NewConversationsHandler(apiProvider provider.ApiProvider) *ConversationsHandler { // Changed parameter to interface type
 	return &ConversationsHandler{
 		apiProvider: apiProvider,
 	}
@@ -63,7 +63,7 @@ func (ch *ConversationsHandler) ConversationsHistoryHandler(ctx context.Context,
 		}
 	}
 
-	api, err := ch.apiProvider.Provide()
+	api, err := ch.apiProvider.Provide() // This will now call the interface method
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (ch *ConversationsHandler) ConversationsHistoryHandler(ctx context.Context,
 		return nil, err
 	}
 
-	usersMap := ch.apiProvider.ProvideUsersMap()
+	usersMap := ch.apiProvider.ProvideUsersMap() // This will now call the interface method
 
 	var messageList []Message
 	for _, message := range messages.Messages {
